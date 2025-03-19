@@ -24,16 +24,16 @@ Date Work Commenced:25/2/2025
 
 
 // YOU CAN ADD YOUR OWN FUNCTIONS, DECLARATIONS AND VARIABLES HERE
+#define NumKeywords 21
 FILE *input;
 int LineCount;
 bool TokenReady;
 Token t;
-const int NumKeywords = 21;
-const char* keywords[NumKeywords] = {'class', 'constructor', 'method', 'function', 'int', 'boolean', 'char', 'void', 'var', 'static', 'field', 'let', 'do', 'if', 'else', 'while', 'return', 'true', 'false', 'null', 'this'};
+const char* keywords[NumKeywords] = {"class", "constructor", "method", "function", "int", "boolean", "char", "void", "var", "static", "field", "let", "do", "if", "else", "while", "return", "true", "false", "null", "this"};
 
 bool IsKeyWord(char* str){
   for(int i = 0; i < NumKeywords; i++){
-    if(strcmp(str, keywords[i])){
+    if(strcmp(str, keywords[i]) == 0){
       return true;
     }
     return false;
@@ -51,7 +51,7 @@ bool IsKeyWord(char* str){
 // if everything goes well the function should return 1
 int InitLexer (char* file_name)
 {
-  input = fopen(file_name, 'r');
+  input = fopen(file_name, "r");
   if (input == NULL){
     return 0;
   }
@@ -86,16 +86,16 @@ int StopLexer ()
 }
 
 // do not remove the next line
-#ifndef TEST
+//#ifndef TEST
 int main ()
 {
 	// implement your main function here
   // NOTE: the autograder will not use your main function
-  if (IsKeyWord('class')){
-    printf('True')
+  if (IsKeyWord("class")){
+    printf("True");
   }
-  
+  printf("Working");
 	return 0;
 }
 // do not remove the next line
-#endif
+//#endif
