@@ -62,9 +62,9 @@ bool IsKeyWord(char* str){
 
 
 int EatWC(){
-  //Consume white space and comments
+  //Consume white space and comments then return char
   int c = getc(input);
-  while (c != EOF){
+  while (c != -1){
     if (c == '\n'){
       LineCount++;
     }
@@ -96,6 +96,42 @@ int EatWC(){
     }
     c = getc(input);
   }
+  return EOF;
+}
+
+char* ResetBuffer(char* buffer){
+  // Reset the buffer to empty
+  for (int i = 0; i < 100; i++){
+    buffer[i] = '\0';
+  }
+  return buffer;
+}
+void GatherTokens(){
+  // Gather tokens from the source file and store them in the token stream
+  // This function should be called after the lexer has been initialised and the source file opened
+  
+  char buffer[100];
+  char wordbuffer[100][100];
+  int i, j = 0;
+  char c = EatWC();
+  while (c != EOF){
+    buffer[i++] = c;
+    c = getc(input);
+    while (isalnum(c) || c == '_'){
+      buffer[i++] = c;
+      c = getc(input);
+    }
+    buffer[i] = '\0';
+    strcpy(wordbuffer[j], buffer);
+    j++; strcpy(buffer, ResetBuffer(buffer)); i = 0;
+    c = EatWC();
+  }
+  for (int k = 0; k < j; k++){
+    printf("%dth Word: %s\n", k, wordbuffer[k]);
+  }
+  
+
+  TokenReady = true;
 }
 
 // Get the next token from the source file
@@ -137,11 +173,7 @@ int main ()
   } else {
     printf("File not opened successfully\n");
   }
-  char first = EatWC();
-  for (int i = 0; i < 5; i++){
-    printf("Next char: %c\n", first);
-    first = EatWC();
-  }
+  GatherTokens();
 	return 0;
 }
 // do not remove the next line
