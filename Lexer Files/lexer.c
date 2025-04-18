@@ -163,12 +163,12 @@ void GatherTokens(){
     }
   }
   // Print out the tokens gathered
-  for (int i = 0; i < wrd; i++){
-    printf("Word: %s\n", word_buffer[i]);
-  }
-  for (int i = 0; i < str; i++){
-    printf("String: %s\n", string_buffer[i]);
-  }
+  // for (int i = 0; i < wrd; i++){
+  //   printf("Word: %s\n", word_buffer[i]);
+  // }
+  // for (int i = 0; i < str; i++){
+  //   printf("String: %s\n", string_buffer[i]);
+  // }
 
 
   // while (c != EOF){
@@ -247,6 +247,10 @@ int main ()
   } else {
     printf("File not opened successfully\n");
   }
+  GetNextToken();
+  printf("Token: %s\n", t.lx);
+  printf("Token Type: %d\n", t.tp);
+  printf("Line Number: %d\n", t.ln);
   GetNextToken();
   printf("Token: %s\n", t.lx);
   printf("Token Type: %d\n", t.tp);
