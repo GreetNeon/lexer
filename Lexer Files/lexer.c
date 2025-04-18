@@ -31,6 +31,7 @@ int LineCount;
 bool TokenReady;
 Token t;
 const char* keywords[NumKeywords] = {"class", "constructor", "method", "function", "int", "boolean", "char", "void", "var", "static", "field", "let", "do", "if", "else", "while", "return", "true", "false", "null", "this"};
+char current_file[100];
 
 // IMPLEMENT THE FOLLOWING functions
 //***********************************
@@ -43,6 +44,7 @@ const char* keywords[NumKeywords] = {"class", "constructor", "method", "function
 
 int InitLexer (char* file_name)
 {
+  strcpy(current_file, file_name);
   input = fopen(file_name, "r");
   if (input == NULL){
     return 0;
@@ -90,7 +92,10 @@ int EatWC(){
           }
         }
       } else {
-        return c;
+        // If not a comment, return the char
+        ungetc(c, input);
+        printf("Char: %c\n", c);
+        return '/';
       }
     } else if (!isspace(c)){
       return c;
@@ -117,8 +122,15 @@ void BuildToken(){
   int chr, wrd, str = 0;
 
   char c = EatWC();
-  //Loop through the file until EOF)
-  while(TokenReady == false && c != EOF){
+  //Loop through the file until EOF or a token is found
+  if (c == EOF){
+    t.tp = EOFile;
+    strcpy(t.lx, "End of file");
+    t.ln = LineCount;
+    TokenReady = true;
+    return;
+  }
+  while(c != EOF){
     if (c == '"'){
       //String Literal
       c = getc(input);
@@ -129,12 +141,24 @@ void BuildToken(){
           // End of file in string literal
           // Set error code and message in token
           printf("Error: End of file in string literal\n");
+          t.tp = ERR;
+          t.ec = EofInStr;
+          t.ln = LineCount;
+          strcpy(t.lx, "End of file in string literal");
+          strcpy(t.fl, current_file);
+          TokenReady = true;
           return;
         }
         if (c == '\n'){
           // New line in string literal
           // Set error code and message in token
           printf("Error: New line in string literal\n");
+          t.tp = ERR;
+          t.ec = NewLnInStr;
+          t.ln = LineCount;
+          strcpy(t.lx, "New line in string literal");
+          strcpy(t.fl, current_file);
+          TokenReady = true;
           return;
         }
       }
@@ -145,6 +169,7 @@ void BuildToken(){
       strcpy(t.lx, string_buffer[str-1]);
       t.ln = LineCount;
       TokenReady = true;
+      return;
       
     }
     else if (isalnum(c) || c == '_'){
@@ -163,16 +188,29 @@ void BuildToken(){
       t.ln = LineCount;
       TokenReady = true;
       wrd++; strcpy(buffer, ResetBuffer(buffer)); chr = 0;
+      return;
+    }
+    else if(isspace(c)){
+      c = EatWC();
     }
     else{
-      if (c == '\n'){
-        LineCount++;
-    }
-      if (TokenReady == false){
-        c = EatWC();
+      //Must Be a symbol or illegal character
+      if (c == '{' || c == '}' || c == '(' || c == ')' || c == '[' || c == ']' || c == '.' || c == ',' || c == ';' || c == '+' || c == '-' || c == '*' || c == '/' || c == '&' || c == '|' || c == '<' || c == '>' || c == '=' || c == '~'){
+        t.tp = SYMBOL;
+        t.lx[0] = c;
+        t.lx[1] = '\0';
+        t.ln = LineCount;
+        TokenReady = true;
+        return;
+      } else {
+        // Illegal symbol in source file
+        // Set error code and message in token
+        printf("Error: Illegal symbol in source file\n");
+        return;
       }
+    }
   }
-  }
+}
   // Print out the tokens gathered
   // for (int i = 0; i < wrd; i++){
   //   printf("Word: %s\n", word_buffer[i]);
@@ -212,11 +250,6 @@ void BuildToken(){
   // for (int k = 0; k < j; k++){
   //   //printf("%dth Word: %s\n", k, wordbuffer[k]);
   // }
-  
-
-  
-}
-
 // Get the next token from the source file
 Token GetNextToken ()
 {
@@ -240,6 +273,18 @@ Token PeekNextToken ()
 // clean out at end, e.g. close files, free memory, ... etc
 int StopLexer ()
 {
+  if (input != NULL){
+    fclose(input);
+  }
+  TokenReady = false;
+  t.tp = ERR;
+  t.ln = -1;
+  strcpy(t.lx, "");
+  strcpy(t.fl, "");
+  strcpy(current_file, "");
+  LineCount = 0;
+
+  return 1;
 	return 0;
 }
 
@@ -254,12 +299,20 @@ int main ()
   } else {
     printf("File not opened successfully\n");
   }
-  for (int i = 0; i < 10; i++){
+  for (int i = 0; i < 100; i++){
+    if (t.tp == EOFile){
+      printf("\n!!End of file reached!!\n");
+      break;
+    }
+    Token lst[2];
+    lst[0] = t;
     GetNextToken();
+    lst[1] = t;
     printf("\nToken: %s\n", t.lx);
     printf("Token Type: %d\n", t.tp);
     printf("Line Number: %d\n", t.ln);
   }
+  StopLexer();
 	return 0;
 }
 // do not remove the next line
