@@ -111,27 +111,85 @@ void GatherTokens(){
   // This function should be called after the lexer has been initialised and the source file opened
   
   char buffer[100];
-  char wordbuffer[100][100];
-  int i, j = 0;
+  char word_buffer[100][100];
+  char string_buffer[100][100];
+  int chr, wrd, str = 0;
   char c = EatWC();
-  while (c != EOF){
-    buffer[i++] = c;
-    c = getc(input);
-    while (isalnum(c) || c == '_'){
-      buffer[i++] = c;
+  //Loop through the file until EOF)
+  while(c != EOF || c != -1){
+    if (c == '"'){
+      //String Literal
+      c = getc(input);
+      while(c != '"'){
+        buffer[chr++] = c;
+        c = getc(input);
+        if (c == EOF){
+          printf("Error: End of file in string literal\n");
+          return;
+        }
+      }
+      buffer[chr] = '\0';
+      strcpy(string_buffer[str], buffer);
+      str++; strcpy(buffer, ResetBuffer(buffer)); chr = 0;
       c = getc(input);
     }
-    buffer[i] = '\0';
-    strcpy(wordbuffer[j], buffer);
-    j++; strcpy(buffer, ResetBuffer(buffer)); i = 0;
-    c = EatWC();
+    else if (isalnum(c) || c == '_'){
+      //printf("Identifier\n");
+      while(isalnum(c) || c == '_'){
+        buffer[chr++] = c;
+        c = getc(input);
+      }
+      buffer[chr] = '\0';
+      strcpy(word_buffer[wrd], buffer);
+      wrd++; strcpy(buffer, ResetBuffer(buffer)); chr = 0;
+      c = getc(input);
+    }
+    else{
+      c = EatWC();
+    }
   }
-  for (int k = 0; k < j; k++){
-    printf("%dth Word: %s\n", k, wordbuffer[k]);
+  // Print out the tokens gathered
+  for (int i = 0; i < wrd; i++){
+    printf("Word: %s\n", word_buffer[i]);
   }
+  for (int i = 0; i < str; i++){
+    printf("String: %s\n", string_buffer[i]);
+  }
+
+
+  // while (c != EOF){
+  //   buffer[i++] = c;
+  //   c = getc(input);
+  //   printf("Current char: %c\n", c);
+  //   if (c == '"'){
+  //     printf("String Literal\n");
+  //     while (c != '"'){
+  //       buffer[i++] = c;
+  //       c = getc(input);
+  //     }
+  //     buffer[i++] = c;
+  //     buffer[i] = '\0';
+  //     strcpy(wordbuffer[j], buffer);
+  //     // Create a string token
+  //     j++; strcpy(buffer, ResetBuffer(buffer)); i = 0;
+  //     c = EatWC();
+      
+  //   }
+  //   while (isalnum(c) || c == '_'){
+  //     buffer[i++] = c;
+  //     c = getc(input);
+  //   }
+  //   buffer[i] = '\0';
+  //   strcpy(wordbuffer[j], buffer);
+  //   j++; strcpy(buffer, ResetBuffer(buffer)); i = 0;
+  //   c = EatWC();
+  // }
+  // for (int k = 0; k < j; k++){
+  //   //printf("%dth Word: %s\n", k, wordbuffer[k]);
+  // }
   
 
-  TokenReady = true;
+  
 }
 
 // Get the next token from the source file
