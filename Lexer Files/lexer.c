@@ -14,6 +14,7 @@ Email:sc23tg@leeds.ac.uk
 Date Work Commenced:25/2/2025
 *************************************************************************/
 
+//Current Errors: Line count not working properly, only string tokens are being returned, not all tokens.
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -116,7 +117,7 @@ void GatherTokens(){
   int chr, wrd, str = 0;
   char c = EatWC();
   //Loop through the file until EOF)
-  while(c != EOF || c != -1){
+  while(TokenReady == false && c != EOF){
     if (c == '"'){
       //String Literal
       c = getc(input);
@@ -124,14 +125,27 @@ void GatherTokens(){
         buffer[chr++] = c;
         c = getc(input);
         if (c == EOF){
+          // End of file in string literal
+          // Set error code and message in token
           printf("Error: End of file in string literal\n");
+          return;
+        }
+        if (c == '\n'){
+          // New line in string literal
+          // Set error code and message in token
+          printf("Error: New line in string literal\n");
           return;
         }
       }
       buffer[chr] = '\0';
       strcpy(string_buffer[str], buffer);
       str++; strcpy(buffer, ResetBuffer(buffer)); chr = 0;
+      t.tp = STRING;
+      strcpy(t.lx, string_buffer[str-1]);
+      t.ln = LineCount;
+      TokenReady = true;
       c = getc(input);
+      
     }
     else if (isalnum(c) || c == '_'){
       //printf("Identifier\n");
@@ -196,7 +210,9 @@ void GatherTokens(){
 Token GetNextToken ()
 {
 	Token t;
+  TokenReady = false;
   t.tp = ERR;
+  GatherTokens();
   return t;
 }
 
@@ -231,7 +247,10 @@ int main ()
   } else {
     printf("File not opened successfully\n");
   }
-  GatherTokens();
+  GetNextToken();
+  printf("Token: %s\n", t.lx);
+  printf("Token Type: %d\n", t.tp);
+  printf("Line Number: %d\n", t.ln);
 	return 0;
 }
 // do not remove the next line
