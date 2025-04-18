@@ -14,7 +14,7 @@ Email:sc23tg@leeds.ac.uk
 Date Work Commenced:25/2/2025
 *************************************************************************/
 
-//Current Errors: Line count not working properly, only string tokens are being returned, not all tokens.
+//Current Errors: Symbols Skipped: Make them symbol tokens, Errors not handled correctly
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -57,8 +57,8 @@ bool IsKeyWord(char* str){
     if(strcmp(str, keywords[i]) == 0){
       return true;
     }
-    return false;
   }
+  return false;
 }
 
 
@@ -73,8 +73,8 @@ int EatWC(){
       c = getc(input);
       if (c == '/'){
         while (c != '\n' && c != EOF){
+          //Eat Comment
           c = getc(input);
-          
         }
         LineCount++;
       } else if (c == '*'){
@@ -107,7 +107,7 @@ char* ResetBuffer(char* buffer){
   }
   return buffer;
 }
-void GatherTokens(){
+void BuildToken(){
   // Gather tokens from the source file and store them in the token stream
   // This function should be called after the lexer has been initialised and the source file opened
   
@@ -115,6 +115,7 @@ void GatherTokens(){
   char word_buffer[100][100];
   char string_buffer[100][100];
   int chr, wrd, str = 0;
+
   char c = EatWC();
   //Loop through the file until EOF)
   while(TokenReady == false && c != EOF){
@@ -144,23 +145,33 @@ void GatherTokens(){
       strcpy(t.lx, string_buffer[str-1]);
       t.ln = LineCount;
       TokenReady = true;
-      c = getc(input);
       
     }
     else if (isalnum(c) || c == '_'){
-      //printf("Identifier\n");
       while(isalnum(c) || c == '_'){
         buffer[chr++] = c;
         c = getc(input);
       }
       buffer[chr] = '\0';
       strcpy(word_buffer[wrd], buffer);
+      if (IsKeyWord(buffer)){
+        t.tp = RESWORD;
+      } else {
+        t.tp = ID;
+      }
+      strcpy(t.lx, word_buffer[wrd]);
+      t.ln = LineCount;
+      TokenReady = true;
       wrd++; strcpy(buffer, ResetBuffer(buffer)); chr = 0;
-      c = getc(input);
     }
     else{
-      c = EatWC();
+      if (c == '\n'){
+        LineCount++;
     }
+      if (TokenReady == false){
+        c = EatWC();
+      }
+  }
   }
   // Print out the tokens gathered
   // for (int i = 0; i < wrd; i++){
@@ -212,7 +223,7 @@ Token GetNextToken ()
 	Token t;
   TokenReady = false;
   t.tp = ERR;
-  GatherTokens();
+  BuildToken();
   return t;
 }
 
@@ -238,23 +249,17 @@ int main ()
 {
 	// implement your main function here
   // NOTE: the autograder will not use your main function
-  if (IsKeyWord("class")){
-    printf("True\n");
-  }
-  printf("Working\n");
   if (InitLexer("Main.jack")){
     printf("File opened successfully\n");
   } else {
     printf("File not opened successfully\n");
   }
-  GetNextToken();
-  printf("Token: %s\n", t.lx);
-  printf("Token Type: %d\n", t.tp);
-  printf("Line Number: %d\n", t.ln);
-  GetNextToken();
-  printf("Token: %s\n", t.lx);
-  printf("Token Type: %d\n", t.tp);
-  printf("Line Number: %d\n", t.ln);
+  for (int i = 0; i < 10; i++){
+    GetNextToken();
+    printf("\nToken: %s\n", t.lx);
+    printf("Token Type: %d\n", t.tp);
+    printf("Line Number: %d\n", t.ln);
+  }
 	return 0;
 }
 // do not remove the next line
