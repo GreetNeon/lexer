@@ -328,20 +328,20 @@ int main()
   } else {
     printf("File not opened successfully\n");
   }
-  // for (int i = 0; i < 1000; i++){
-  //   if (t.tp == EOFile){
-  //     printf("\n!!End of file reached!!\n");
-  //     printf("Number of Tokens: %d\n", i);
-  //     break;
-  //   }
-  //   Token lst[2];
-  //   lst[0] = t;
-  //   GetNextToken();
-  //   lst[1] = t;
-  //   printf("\nToken: %s\n", t.lx);
-  //   printf("Token Type: %d\n", t.tp);
-  //   printf("Line Number: %d\n", t.ln);
-  //}
+  for (int i = 0; i < 1000; i++){
+    if (t.tp == EOFile){
+      printf("\n!!End of file reached!!\n");
+      printf("Number of Tokens: %d\n", i);
+      break;
+    }
+    Token lst[2];
+    lst[0] = t;
+    GetNextToken();
+    lst[1] = t;
+    printf("\nToken: %s\n", t.lx);
+    printf("Token Type: %d\n", t.tp);
+    printf("Line Number: %d\n", t.ln);
+  }
   StoreTokens();
   StopLexer();
 	return 0;
