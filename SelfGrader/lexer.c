@@ -143,7 +143,6 @@ void BuildToken(){
         if (c == EOF){
           // End of file in string literal
           // Set error code and message in token
-          printf("Error: End of file in string literal\n");
           t.tp = ERR;
           t.ec = EofInStr;
           t.ln = LineCount;
@@ -174,7 +173,7 @@ void BuildToken(){
       return;
       
     }
-    else if (isalnum(c) || c == '_'){
+    else if (isalpha(c) || c == '_'){
       while(isalnum(c) || c == '_'){
         buffer[chr++] = c;
         c = getc(input);
@@ -196,6 +195,21 @@ void BuildToken(){
     else if(isspace(c)){
       c = EatWC();
     }
+    else if(isdigit(c)){
+      while(isdigit(c)){
+        buffer[chr++] = c;
+        c = getc(input);
+      }
+      buffer[chr] = '\0';
+      t.tp = INT;
+      strcpy(t.lx, buffer);
+      t.ln = LineCount;
+      strcpy(t.fl, current_file);
+      strcpy(buffer, ResetBuffer(buffer)); chr = 0;
+      ungetc(c, input); // Put back the last character
+      TokenReady = true;
+      return;
+    }
     else{
       //Must Be a symbol or illegal character
       if (c == '{' || c == '}' || c == '(' || c == ')' || c == '[' || c == ']' || c == '.' || c == ',' || c == ';' || c == '+' || c == '-' || c == '*' || c == '/' || c == '&' || c == '|' || c == '<' || c == '>' || c == '=' || c == '~'){
@@ -209,7 +223,6 @@ void BuildToken(){
       } else {
         // Illegal symbol in source file
         // Set error code and message in token
-        printf("Error: Illegal symbol in source file\n");
         t.tp = ERR;
         t.ec = IllSym;
         t.ln = LineCount;

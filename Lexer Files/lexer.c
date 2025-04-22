@@ -14,7 +14,7 @@ Email:sc23tg@leeds.ac.uk
 Date Work Commenced:25/2/2025
 *************************************************************************/
 
-//Current Errors: Symbols Skipped: Make them symbol tokens, Errors not handled correctly
+//Current Errors:
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -31,7 +31,7 @@ int LineCount;
 bool TokenListReady, TokenReady;
 Token t;
 const char* keywords[NumKeywords] = {"class", "constructor", "method", "function", "int", "boolean", "char", "void", "var", "static", "field", "let", "do", "if", "else", "while", "return", "true", "false", "null", "this"};
-char current_file[100];
+char CurrentFile[100];
 Token TokenList[10000];
 int CurrentToken = 0;
 
@@ -63,7 +63,10 @@ int EatWC(){
     if (c == '/'){
       c = getc(input);
       if (c == '/'){
-        while (c != '\n' && c != EOF){
+        while (c != '\n'){
+          if (c == EOF){
+            return 0;
+          }
           //Eat Comment
           c = getc(input);
         }
@@ -78,6 +81,8 @@ int EatWC(){
             if (c == '/'){
               break;
             }
+          } else if (c == '\n'){
+            LineCount++;
           }
         }
       } else {
@@ -104,10 +109,8 @@ void BuildToken(){
   // Gather tokens from the source file and store them in the token stream
   // This function should be called after the lexer has been initialised and the source file opened
   
-  char buffer[100];
-  char word_buffer[100][100];
-  char string_buffer[100][100];
-  int chr, wrd, str,tok = 0;
+  char buffer[1000];
+  int chr = 0;
 
   char c = EatWC();
   //Loop through the file until EOF or a token is found
@@ -115,7 +118,18 @@ void BuildToken(){
     t.tp = EOFile;
     strcpy(t.lx, "End of file");
     t.ln = LineCount;
-    strcpy(t.fl, current_file);
+    strcpy(t.fl, CurrentFile);
+    TokenReady = true;
+    return;
+  }
+  if (c == 0){
+    //EOF in comment
+    // Set error code and message in token
+    t.tp = ERR;
+    t.ec = EofInCom;
+    t.ln = LineCount;
+    strcpy(t.lx, "Error: unexpected eof in comment");
+    strcpy(t.fl, CurrentFile);
     TokenReady = true;
     return;
   }
@@ -129,61 +143,72 @@ void BuildToken(){
         if (c == EOF){
           // End of file in string literal
           // Set error code and message in token
-          printf("Error: End of file in string literal\n");
           t.tp = ERR;
           t.ec = EofInStr;
           t.ln = LineCount;
-          strcpy(t.lx, "End of file in string literal");
-          strcpy(t.fl, current_file);
+          strcpy(t.lx, "Error: unexpected eof in string constant");
+          strcpy(t.fl, CurrentFile);
           TokenReady = true;
           return;
         }
         if (c == '\n'){
           // New line in string literal
           // Set error code and message in token
-          printf("Error: New line in string literal\n");
           t.tp = ERR;
           t.ec = NewLnInStr;
           t.ln = LineCount;
-          strcpy(t.lx, "New line in string literal");
-          strcpy(t.fl, current_file);
+          strcpy(t.lx, "Error: new line in string constant");
+          strcpy(t.fl, CurrentFile);
           TokenReady = true;
           return;
         }
       }
       buffer[chr] = '\0';
-      strcpy(string_buffer[str], buffer);
-      str++; strcpy(buffer, ResetBuffer(buffer)); chr = 0;
       t.tp = STRING;
-      strcpy(t.lx, string_buffer[str-1]);
+      strcpy(t.lx, buffer);
+      strcpy(buffer, ResetBuffer(buffer)); chr = 0;
       t.ln = LineCount;
-      strcpy(t.fl, current_file);
+      strcpy(t.fl, CurrentFile);
       TokenReady = true;
       return;
       
     }
-    else if (isalnum(c) || c == '_'){
+    else if (isalpha(c) || c == '_'){
       while(isalnum(c) || c == '_'){
         buffer[chr++] = c;
         c = getc(input);
       }
       buffer[chr] = '\0';
-      strcpy(word_buffer[wrd], buffer);
       if (IsKeyWord(buffer)){
         t.tp = RESWORD;
       } else {
         t.tp = ID;
       }
-      strcpy(t.lx, word_buffer[wrd]);
+      strcpy(t.lx, buffer);
       t.ln = LineCount;
-      strcpy(t.fl, current_file);
-      wrd++; strcpy(buffer, ResetBuffer(buffer)); chr = 0;
+      strcpy(t.fl, CurrentFile);
+      strcpy(buffer, ResetBuffer(buffer)); chr = 0;
       ungetc(c, input); // Put back the last character
       TokenReady = true;
       return;
     }
     else if(isspace(c)){
       c = EatWC();
+    }
+    else if(isdigit(c)){
+      while(isdigit(c)){
+        buffer[chr++] = c;
+        c = getc(input);
+      }
+      buffer[chr] = '\0';
+      t.tp = INT;
+      strcpy(t.lx, buffer);
+      t.ln = LineCount;
+      strcpy(t.fl, CurrentFile);
+      strcpy(buffer, ResetBuffer(buffer)); chr = 0;
+      ungetc(c, input); // Put back the last character
+      TokenReady = true;
+      return;
     }
     else{
       //Must Be a symbol or illegal character
@@ -192,13 +217,16 @@ void BuildToken(){
         t.lx[0] = c;
         t.lx[1] = '\0';
         t.ln = LineCount;
-        strcpy(t.fl, current_file);
+        strcpy(t.fl, CurrentFile);
         TokenReady = true;
         return;
       } else {
         // Illegal symbol in source file
         // Set error code and message in token
-        printf("Error: Illegal symbol in source file\n");
+        t.tp = ERR;
+        t.ec = IllSym;
+        t.ln = LineCount;
+        strcpy(t.lx, "Error: illegal symbol in source file");
         TokenReady = true;
         return;
       }
@@ -258,7 +286,7 @@ Token PeekNextToken ()
 
 int InitLexer (char* file_name)
 {
-  strcpy(current_file, file_name);
+  strcpy(CurrentFile, file_name);
   input = fopen(file_name, "r");
   if (input == NULL){
     return 0;
@@ -280,7 +308,7 @@ int StopLexer ()
   t.ln = -1;
   strcpy(t.lx, "");
   strcpy(t.fl, "");
-  strcpy(current_file, "");
+  strcpy(CurrentFile, "");
   LineCount = 0;
   CurrentToken = 0;
   TokenReady = false;
@@ -290,7 +318,7 @@ int StopLexer ()
 }
 
 // do not remove the next line
-//#ifndef TEST
+#ifndef TEST
 int main()
 {
 	// implement your main function here
@@ -319,4 +347,4 @@ int main()
 	return 0;
 }
 // do not remove the next line
-//#endif
+#endif
