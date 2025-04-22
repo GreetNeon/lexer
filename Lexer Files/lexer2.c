@@ -28,12 +28,11 @@ Date Work Commenced:25/2/2025
 #define NumKeywords 21
 FILE *input;
 int LineCount;
-bool TokenListReady, TokenReady;
+bool TokenReady;
 Token t;
 const char* keywords[NumKeywords] = {"class", "constructor", "method", "function", "int", "boolean", "char", "void", "var", "static", "field", "let", "do", "if", "else", "while", "return", "true", "false", "null", "this"};
 char current_file[100];
-Token TokenList[10000];
-int CurrentToken = 0;
+Token TokenList[1000];
 
 // IMPLEMENT THE FOLLOWING functions
 //***********************************
@@ -43,6 +42,18 @@ int CurrentToken = 0;
 // This requires opening the file and making any necessary initialisations of the lexer
 // If an error occurs, the function should return 0
 // if everything goes well the function should return 1
+
+int InitLexer (char* file_name)
+{
+  strcpy(current_file, file_name);
+  input = fopen(file_name, "r");
+  if (input == NULL){
+    return 0;
+  }
+  TokenReady = false;
+  LineCount = 1;
+  return 1;
+}
 
 bool IsKeyWord(char* str){
   for(int i = 0; i < NumKeywords; i++){
@@ -83,6 +94,7 @@ int EatWC(){
       } else {
         // If not a comment, return the char
         ungetc(c, input);
+        printf("Char: %c\n", c);
         return '/';
       }
     } else if (!isspace(c)){
@@ -111,16 +123,17 @@ void BuildToken(){
 
   char c = EatWC();
   //Loop through the file until EOF or a token is found
-  if (c == EOF || c == -1){
-    t.tp = EOFile;
-    strcpy(t.lx, "End of file");
-    t.ln = LineCount;
-    strcpy(t.fl, current_file);
-    TokenReady = true;
-    return;
-  }
-  while(c != EOF){
-    if (c == '"'){
+
+  while(1){
+    if (c == EOF || c == -1){
+      t.tp = EOFile;
+      strcpy(t.lx, "End of file");
+      t.ln = LineCount;
+      strcpy(t.fl, current_file);
+      TokenReady = true;
+      break;
+    }
+    else if (c == '"'){
       //String Literal
       c = getc(input);
       while(c != '"'){
@@ -135,8 +148,7 @@ void BuildToken(){
           t.ln = LineCount;
           strcpy(t.lx, "End of file in string literal");
           strcpy(t.fl, current_file);
-          TokenReady = true;
-          return;
+          
         }
         if (c == '\n'){
           // New line in string literal
@@ -147,8 +159,9 @@ void BuildToken(){
           t.ln = LineCount;
           strcpy(t.lx, "New line in string literal");
           strcpy(t.fl, current_file);
-          TokenReady = true;
-          return;
+          // TokenReady = true;
+          // return;
+          break;
         }
       }
       buffer[chr] = '\0';
@@ -158,8 +171,8 @@ void BuildToken(){
       strcpy(t.lx, string_buffer[str-1]);
       t.ln = LineCount;
       strcpy(t.fl, current_file);
-      TokenReady = true;
-      return;
+      // TokenReady = true;
+      // return;
       
     }
     else if (isalnum(c) || c == '_'){
@@ -177,10 +190,10 @@ void BuildToken(){
       strcpy(t.lx, word_buffer[wrd]);
       t.ln = LineCount;
       strcpy(t.fl, current_file);
+      TokenReady = true;
       wrd++; strcpy(buffer, ResetBuffer(buffer)); chr = 0;
       ungetc(c, input); // Put back the last character
-      TokenReady = true;
-      return;
+      // return;
     }
     else if(isspace(c)){
       c = EatWC();
@@ -193,27 +206,18 @@ void BuildToken(){
         t.lx[1] = '\0';
         t.ln = LineCount;
         strcpy(t.fl, current_file);
-        TokenReady = true;
-        return;
+        // TokenReady = true;
+        // return;
       } else {
         // Illegal symbol in source file
         // Set error code and message in token
         printf("Error: Illegal symbol in source file\n");
-        TokenReady = true;
-        return;
+        break;
       }
     }
-
+    // Store token in the token list
   }
-}
-
-Token FetchToken ()
-{
-	Token t;
-  TokenListReady = false;
-  t.tp = ERR;
-  BuildToken();
-  return t;
+  // While loop ends here
 }
 
 void StoreTokens(){
@@ -228,62 +232,51 @@ void StoreTokens(){
         break;
       }
     }
-    FetchToken();
+    GetNextToken();
   }
-  TokenListReady = true;
+  // Print the token list
+  for (int i = 0; i < tok; i++){
+    printf("Token: %s\n", TokenList[i].lx);
+    printf("Token Type: %d\n", TokenList[i].tp);
+    printf("Line Number: %d\n", TokenList[i].ln);
+    printf("File Name: %s\n", TokenList[i].fl);
+  }
+  // Print the number of tokens
+  printf("Number of Tokens: %d\n", tok);
 }
 
 Token GetNextToken ()
-{ 
-  if (TokenListReady){
-	Token current = TokenList[CurrentToken];
-  CurrentToken++;
-  return current;
-}
-  Token t;
+{
+	Token t;
+  TokenReady = false;
   t.tp = ERR;
+  BuildToken();
   return t;
 }
 
 // peek (look) at the next token in the source file without removing it from the stream
 Token PeekNextToken ()
 {
-  if (TokenListReady){
-    Token current = TokenList[CurrentToken];
-    return current;
+  if (TokenReady){
+    return t;
   }
   t.tp = ERR;
   return t;
 }
 
-int InitLexer (char* file_name)
-{
-  strcpy(current_file, file_name);
-  input = fopen(file_name, "r");
-  if (input == NULL){
-    return 0;
-  }
-  TokenListReady = false;
-  LineCount = 1;
-  TokenReady = false;
-  StoreTokens();
-  return 1;
-}
 // clean out at end, e.g. close files, free memory, ... etc
 int StopLexer ()
 {
   if (input != NULL){
     fclose(input);
   }
-  TokenListReady = false;
+  TokenReady = false;
   t.tp = ERR;
   t.ln = -1;
   strcpy(t.lx, "");
   strcpy(t.fl, "");
   strcpy(current_file, "");
   LineCount = 0;
-  CurrentToken = 0;
-  TokenReady = false;
 
   return 1;
 	return 0;
@@ -291,7 +284,7 @@ int StopLexer ()
 
 // do not remove the next line
 //#ifndef TEST
-int main()
+int main ()
 {
 	// implement your main function here
   // NOTE: the autograder will not use your main function
